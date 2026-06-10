@@ -47,6 +47,17 @@ def cgo_index_of(raw):
             idx[p["ImportPath"]] = libs
     return idx
 
+# The cgo link libs main package `p` pulls in transitively, from a
+# `cgo_index_of` index ([] means pure Go). The detector for "this main needs
+# a cgo build": pair it with your repo's own cgo build emitter, which knows
+# the local C compiler and sysroot.
+def cgo_libs_for(p, cgo_index):
+    libs = {}
+    for imp in [p["import"]] + p["deps"]:
+        for l in cgo_index.get(imp, []):
+            libs[l] = True
+    return sorted(libs.keys())
+
 # Convenience one-shot wrappers (each runs `go list` once). Prefer `go_list` +
 # `packages_of`/`cgo_index_of` when you need both, to list only once.
 def go_packages(ws, dir = "."):
@@ -83,22 +94,26 @@ def bin_name(dir):
     return parts[-1]
 
 # Emit a build target. A goos/goarch pair makes it a pure-Go (CGO_ENABLED=0)
-# cross build; otherwise a host build. cwd defaults to the package dir, so
-# `go build .` builds this package and finds the module's go.mod upward.
-def go_binary(name, pkg, inputs, output, deps = [], goos = None, goarch = None):
-    env = {}
+# cross build; otherwise a host build. `env` overlays the defaults, so a cgo
+# floor can reuse this emitter and supply CGO_ENABLED=1, CC, CGO_CFLAGS and
+# friends itself. cwd defaults to the package dir, so `go build .` builds
+# this package and finds the module's go.mod upward.
+def go_binary(name, pkg, inputs, output, deps = [], goos = None, goarch = None, env = {}, extra_tags = []):
+    base_env = {}
     tags = ["lang=go", "kind=bin"]
     if goos:
-        env = {"CGO_ENABLED": "0", "GOOS": goos, "GOARCH": goarch}
+        base_env = {"CGO_ENABLED": "0", "GOOS": goos, "GOARCH": goarch}
         tags.append("platform=" + goos + "-" + goarch)
+    merged = dict(base_env)
+    merged.update(env)
     target(
         name = name,
         command = "go build -o $GIANT_WORKSPACE_ROOT/" + output + " .",
         inputs = inputs,
         outputs = ["//" + output],
         deps = deps,
-        env = env,
-        tags = tags,
+        env = merged,
+        tags = tags + extra_tags,
         package = pkg["dir"],
     )
 
