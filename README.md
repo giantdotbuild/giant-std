@@ -25,6 +25,11 @@ offline after the first fetch. A checkout of this repo works without the
 network at all (`std: { path: ../giant-std }`), and
 `giant gen vendor <name>` copies a module into your repo for editing.
 
+Starlark runs only inside `giant gen`, and only to write
+`giant.<infix>.yaml` files that you commit. Giant's engine reads that YAML;
+it has no Starlark interpreter, and building a checkout never runs a
+generator (`giant gen --check` in CI guards against drift).
+
 ## Modules
 
 | Module | What it generates | Docs |
