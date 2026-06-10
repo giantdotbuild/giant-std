@@ -27,15 +27,23 @@ network at all (`std: { path: ../giant-std }`), and
 
 ## Modules
 
-| Module | What it generates |
-|---|---|
-| `cargo.star` | A release build+install target per Rust workspace binary, from `cargo metadata`. |
-| `go.star` | Build and test targets per Go package, from `go list` (cgo-aware inputs). |
-| `docker.star` | Image targets: a `docker_image()` primitive, a per-Dockerfile glob convention, and a nearest-Dockerfile tree rule for shared templates. |
+| Module | What it generates | Docs |
+|---|---|---|
+| `cargo.star` | A release build+install target per Rust workspace binary, from `cargo metadata`. | [docs/cargo.md](docs/cargo.md) |
+| `go.star` | Build and test targets per Go package, from `go list` (cgo-aware). | [docs/go.md](docs/go.md) |
+| `docker.star` | Image targets: shared-template or co-located Dockerfiles. | [docs/docker.md](docs/docker.md) |
+| `controllergen.star` | kubebuilder deepcopy/conversion + CRD targets, from marker files. | [docs/controllergen.md](docs/controllergen.md) |
 
 Modules are plain Starlark over giant's generic host primitives
 (`ws.exec`, `ws.glob`, `parse_json`, `target()`) - read them, vendor them,
-or use them as a starting point for your own.
+or use them as a starting point for your own. Each is layered the same way:
+**detectors** that derive facts from the tree, **emitters** that shape one
+correct target, and a **floor** that wires them into the common convention.
+When the floor doesn't fit your repo, call the same detectors and emitters
+from your own `giant.star` - extension is recomposition, and the floors are
+each a screenful of Starlark to crib from. Workspace-specific knobs belong
+in a top-level block of your root `giant.yaml`
+([docs/workspace-config.md](docs/workspace-config.md)).
 
 ## Versioning
 
