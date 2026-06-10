@@ -31,6 +31,7 @@ network at all (`std: { path: ../giant-std }`), and
 |---|---|
 | `cargo.star` | A release build+install target per Rust workspace binary, from `cargo metadata`. |
 | `go.star` | Build and test targets per Go package, from `go list` (cgo-aware inputs). |
+| `docker.star` | Image targets: a `docker_image()` primitive, a per-Dockerfile glob convention, and a nearest-Dockerfile tree rule for shared templates. |
 
 Modules are plain Starlark over giant's generic host primitives
 (`ws.exec`, `ws.glob`, `parse_json`, `target()`) - read them, vendor them,
