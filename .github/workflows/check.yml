@@ -1,0 +1,39 @@
+name: Check
+
+# Load every module through a real giant-gen: `load()` parses and
+# evaluates a module's whole top level, so this catches syntax errors and
+# broken exports with no language toolchains involved (the `ws.exec`
+# calls inside the conventions only run when they're invoked).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  load:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install giant
+        run: |
+          curl -fsSL https://giant.build/install.sh | GIANT_INSTALL_DIR="$HOME/.local/bin" sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Load all modules
+        run: |
+          ws="$(mktemp -d)"
+          printf '%s\n' \
+            'workspace: { name: stdcheck }' \
+            "std: { path: $GITHUB_WORKSPACE }" \
+            > "$ws/giant.yaml"
+          printf '%s\n' \
+            'load("@std//cargo.star", "cargo_targets")' \
+            'load("@std//go.star", "go_targets")' \
+            'load("@std//docker.star", "docker_image", "dockerfile_targets", "nearest_dockerfile")' \
+            'load("@std//controllergen.star", "controllergen_targets")' \
+            '' \
+            'def generate(ws):' \
+            '    target(name = "ok", command = "true", outputs = [], cache = False)' \
+            > "$ws/giant.star"
+          (cd "$ws" && giant gen)
